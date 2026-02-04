@@ -1,0 +1,28 @@
+[Unit]
+Description=MansionNET Radio IRC Bot
+Documentation=file:///home/radiobot/mansion-radio-bot/README.md
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=radiobot
+Group=radiobot
+WorkingDirectory=/home/radiobot/mansion-radio-bot
+Environment="PATH=/home/radiobot/mansion-radio-bot/venv/bin"
+ExecStart=/home/radiobot/mansion-radio-bot/venv/bin/python main.py
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=mansion-radio-bot
+
+# Security hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/home/radiobot/mansion-radio-bot
+
+[Install]
+WantedBy=multi-user.target

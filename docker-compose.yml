@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  mansion-radio-bot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      # Disable BuildKit to avoid frame size issues in Portainer
+      # network: host
+    container_name: mansion-radio-bot
+    restart: unless-stopped
+    environment:
+      # IRC Configuration
+      - IRC_SERVER=irc.inthemansion.com
+      - IRC_PORT=6697
+      - BOT_NICKNAME=MansionRadio
+      - IRC_CHANNELS=#bots
+      # AzuraCast API
+      - AZURACAST_API=https://radio.inthemansion.com/api/nowplaying/mansionnet
+      # Polling interval (seconds)
+      - POLL_INTERVAL=10
+      # Timezone
+      - TZ=Europe/Belgrade
+    volumes:
+      - ./logs:/app/logs
+    networks:
+      - mansion-net
+    healthcheck:
+      test: ["CMD", "pgrep", "-f", "python main.py"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+networks:
+  mansion-net:
+    driver: bridge

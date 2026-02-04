@@ -1,0 +1,166 @@
+═══════════════════════════════════════════════════════════════════════════════
+                    MANSION RADIO BOT - DEPLOYMENT QUICK REFERENCE
+═══════════════════════════════════════════════════════════════════════════════
+
+PROJECT LOCATION: ~/projects/mansionradio/
+
+───────────────────────────────────────────────────────────────────────────────
+OPTION 1: DOCKER (Testing/Flexible Deployment)
+───────────────────────────────────────────────────────────────────────────────
+
+When to use: Testing locally, deploying to multiple machines, quick setup
+
+Steps:
+  1. Copy to target:
+     scp -r ~/projects/mansionradio user@target:~/
+
+  2. Configure:
+     cd mansionradio
+     cp .env.example .env
+     nano .env  # Edit if needed
+
+  3. Deploy:
+     docker-compose up --build -d
+
+  4. Monitor:
+     docker-compose logs -f
+
+  5. Stop:
+     docker-compose down
+
+Documentation: docs/DEPLOY_DOCKER.md
+
+───────────────────────────────────────────────────────────────────────────────
+OPTION 2: BARE METAL (Production, Like Eggdrops) ⭐ RECOMMENDED
+───────────────────────────────────────────────────────────────────────────────
+
+When to use: Pi3 or Ubuntu VM, minimal overhead, like eggdrop setup
+
+Steps:
+  1. Copy to target:
+     scp -r ~/projects/mansionradio user@pi3:~/
+
+  2. SSH and setup:
+     ssh user@pi3
+     cd mansionradio
+     bash setup.sh
+
+  3. Configure:
+     nano .env  # Edit if needed
+
+  4. Install systemd service:
+     sudo cp systemd/mansion-radio-bot.service /etc/systemd/system/
+     sudo systemctl daemon-reload
+     sudo systemctl enable mansion-radio-bot
+     sudo systemctl start mansion-radio-bot
+
+  5. Verify:
+     sudo systemctl status mansion-radio-bot
+     journalctl -u mansion-radio-bot -f
+
+Management Commands:
+  • Start:   systemctl start mansion-radio-bot
+  • Stop:    systemctl stop mansion-radio-bot
+  • Status:  systemctl status mansion-radio-bot
+  • Logs:    journalctl -u mansion-radio-bot -f
+  • Restart: systemctl restart mansion-radio-bot
+
+Documentation: docs/DEPLOY_BAREMETAL.md
+
+───────────────────────────────────────────────────────────────────────────────
+CONFIGURATION (.env file)
+───────────────────────────────────────────────────────────────────────────────
+
+IRC_SERVER=irc.inthemansion.com
+IRC_PORT=6697
+BOT_NICKNAME=MansionRadio              # Change this to unique name
+IRC_CHANNELS=#radio                    # Or #radio,#music
+AZURACAST_API=https://radio.inthemansion.com/api/nowplaying/mansionnet
+POLL_INTERVAL=15
+
+───────────────────────────────────────────────────────────────────────────────
+KEY FEATURES
+───────────────────────────────────────────────────────────────────────────────
+
+✅ Real-time song announcements to IRC
+✅ TLS encrypted connection (port 6697)
+✅ 15-second API polling (configurable)
+✅ Automatic IRC reconnection
+✅ Error resilience & comprehensive logging
+✅ Graceful shutdown handling
+
+───────────────────────────────────────────────────────────────────────────────
+COMPARISON: DOCKER vs BARE METAL
+───────────────────────────────────────────────────────────────────────────────
+
+                    Docker          Bare Metal
+Setup Time          3 min           5 min
+Memory Usage        ~50-80MB        ~15-20MB
+Startup Speed       2-3 sec         <1 sec
+Portable            Yes             No
+Like Eggdrops       No              Yes ⭐
+Learning Curve      Medium          Low
+Logs                docker logs     journalctl
+
+───────────────────────────────────────────────────────────────────────────────
+FILE STRUCTURE
+───────────────────────────────────────────────────────────────────────────────
+
+Core:
+  main.py                    Entry point
+  bot.py                     IRC bot implementation
+  fetchers/azuracast.py      API client
+
+Docker:
+  Dockerfile                 Image definition
+  docker-compose.yml         Compose config
+  .dockerignore
+
+Systemd:
+  systemd/mansion-radio-bot.service
+
+Documentation:
+  DEPLOYMENT.md              Start here
+  README.md                  Full overview
+  QUICKSTART.md              Quick reference
+  docs/DEPLOY_DOCKER.md      Docker guide
+  docs/DEPLOY_BAREMETAL.md   Bare metal guide
+
+Config:
+  .env.example               Template
+  requirements.txt           Dependencies
+
+───────────────────────────────────────────────────────────────────────────────
+TROUBLESHOOTING
+───────────────────────────────────────────────────────────────────────────────
+
+Docker:
+  Won't start?       docker-compose logs mansion-radio-bot
+  Check resources?   docker stats mansion-radio-bot
+  Rebuild?           docker-compose build --no-cache
+
+Bare Metal:
+  Won't start?       sudo systemctl status mansion-radio-bot
+  View errors?       journalctl -u mansion-radio-bot -n 50
+  Test manually?     source venv/bin/activate && python main.py
+
+Both:
+  IRC connection?    nc -zv irc.inthemansion.com 6697
+  API working?       curl https://radio.inthemansion.com/api/nowplaying/mansionnet
+
+───────────────────────────────────────────────────────────────────────────────
+NEXT STEPS
+───────────────────────────────────────────────────────────────────────────────
+
+1. Read DEPLOYMENT.md for full overview
+2. Choose Docker or Bare Metal
+3. When ready, copy to target machine
+4. Follow the deployment guide for your choice
+5. Test in IRC channel #radio
+
+───────────────────────────────────────────────────────────────────────────────
+
+Status: ✅ FULLY PREPARED - NOT DEPLOYED TO THIS MACHINE (as requested)
+Ready to deploy to Pi3 or Ubuntu VM whenever needed.
+
+═══════════════════════════════════════════════════════════════════════════════
