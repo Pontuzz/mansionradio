@@ -1,172 +1,117 @@
-# MansionRadio Bot - Project Guidelines
+# MansionRadio Bot - Project Guidelines for Agents
 
-## Project Purpose
+## Project Overview
+
 IRC bot that polls an AzuraCast instance and announces currently playing songs to IRC channels. Production-ready with proper SASL authentication and state machine architecture.
 
-## Documentation Standards
+**Repository:** https://github.com/Pontuzz/mansionradio  
+**License:** MIT  
+**Python Version:** 3.8+
 
-### Structure
-- `README.md` - Entry point with quick start, configuration, basic troubleshooting
-- `docs/ARCHITECTURE.md` - Technical deep dive (design decisions, state machine, SASL flow)
-- `docs/DEPLOY_*.md` - Method-specific deployment guides (Docker, Bare Metal, Portainer)
-- `docs/TROUBLESHOOT_*.md` - Issue-specific troubleshooting guides
+## Project Type: Public OSS (Pattern 2)
 
-### Audience Levels
+**Key characteristics:**
+- ✅ Source code committed (main.py, bot.py, etc.)
+- ✅ Only credentials (.env) are gitignored
+- ✅ Example configs (.example files) are committed
+- ✅ Users clone and deploy directly
+- 🌍 Designed for public GitHub release
+
+**For Docwriter:** All referenced paths must exist in repo. Examples should match production code exactly. Focus on path verification and accuracy.
+
+## Documentation Structure
+
+```
+├── README.md                    # Entry point + quick start
+├── docs/
+│   ├── README.md               # Navigation index
+│   ├── ARCHITECTURE.md         # Design & technical deep dive
+│   ├── DEPLOY_*.md             # Deployment method guides
+│   └── TROUBLESHOOT_*.md       # Issue-specific guides
+├── AGENTS.md                   # This file
+└── docs/docker-compose.example.yml
+```
+
+## Key Files (All Committed)
+
+**Verify these exist when documenting:**
+- `main.py` - Entry point
+- `bot.py` - IRC bot implementation
+- `fetchers/azuracast.py` - AzuraCast API client
+- `Dockerfile`, `setup.sh`, `requirements.txt`
+- `systemd/mansion-radio-bot.service` - Systemd service
+- `.env.example` - Configuration template
+- `docker-compose.example.yml` - Docker template
+
+**Do NOT document (gitignored):**
+- `.env` files - Real credentials (reference `.env.example` instead)
+- `docker-compose.yml` - Production config (reference `.example` instead)
+- `logs/`, `__pycache__/`, `.pyc` files - Generated artifacts
+
+## Documentation Audience Levels
 
 | Document | Audience | Skill Level |
 |----------|----------|-------------|
-| README.md | First-time users | Beginner to Intermediate |
-| DEPLOY_DOCKER.md | Users with Docker knowledge | Intermediate |
-| DEPLOY_BAREMETAL.md | Linux/systemd users | Intermediate to Advanced |
+| README.md | New users | Beginner |
+| DEPLOY_DOCKER.md | Docker users | Intermediate |
+| DEPLOY_BAREMETAL.md | Linux/systemd users | Intermediate-Advanced |
 | DEPLOY_PORTAINER.md | Portainer UI users | Intermediate |
 | ARCHITECTURE.md | Contributing developers | Advanced |
-| TROUBLESHOOT_*.md | All levels (issue-specific) | Varies |
+| TROUBLESHOOT_*.md | All levels | Varies |
 
-### Documentation Completeness Criteria
+## Anonymization Rules (Documentation Only)
 
-**Must verify:**
-- ✅ All code examples are tested and accurate
-- ✅ All file paths exist and are correct
-- ✅ All links (internal and external) are functional
-- ✅ All environment variables have descriptions
-- ✅ All placeholder values use consistent naming (see below)
-- ✅ No credentials, IP addresses, or infrastructure names appear (use placeholders)
-- ✅ Configuration examples match `.env.example` and `docker-compose.example.yml`
-- ✅ Deployment steps have been validated on target platform
+| Real Value | Placeholder |
+|------------|-------------|
+| `irc.example.com` | `irc.example.com` (kept generic) |
+| `radio.example.com` | `radio.example.com` (kept generic) |
+| `station_id` | `station_id` (variable name) |
+| Account names | `your_sasl_username` |
+| Passwords | `<your-sasl-password>` |
+| IPv4 addresses | `[your-internal-ip]` |
+| Hostnames | `[your-docker-host]` |
 
-**Quality checks:**
-- Command outputs (logs, CLI) are up-to-date with current version
-- Error messages match actual bot output
-- Troubleshooting steps are logically ordered (easy-to-hard)
-- Prerequisites are clearly stated before each section
+## Documentation Standards
 
-### Anonymization & Placeholder Rules
+**Markdown:**
+- Use ATX headers (#, ##), max 3 levels in quick-start docs
+- Always specify language in code blocks (```bash, ```python)
+- Internal links: relative paths (docs/ARCHITECTURE.md)
+- External links: full URLs
 
-**For documentation only** (not in actual working code):
+**Code examples:**
+- Use `$` prefix for bash commands
+- Show expected output separately
+- Test examples before documenting
 
-| Real Value | Placeholder | Context |
-|------------|-------------|---------|
-| `irc.example.com` | `irc.example.com` | IRC server (kept generic) |
-| `radio.example.com` | `radio.example.com` | AzuraCast server (kept generic) |
-| `station_id` | `station_id` | AzuraCast station identifier |
-| Account names | `your_sasl_username` | SASL account name |
-| Passwords | `<your-sasl-password>` | Any credential |
-| Channel names | `#radio`, `#music` | IRC channels (use realistic examples) |
-| Bot nickname | `MassionRadio` | Use actual bot name (it's generic) |
-| Any IPv4 | `[your-internal-ip]` or `[server-ip]` | IP addresses |
-| Hostnames | `[your-docker-host]` or `[portainer-server]` | Generic server names |
-
-### Consistency Guidelines
-
-**Markdown formatting:**
-- Headers: ATX style (`#`, `##`, etc.), max 3 levels in quick-start docs
-- Code blocks: Always specify language (```bash, ```python, etc.)
-- Lists: Use `-` for unordered, numbers for sequential steps
-- Links: Relative paths for internal docs (`docs/ARCHITECTURE.md`), full URLs for external
-
-**Command examples:**
-- Use `$` prefix for bash commands (not `>` or `#`)
-- Show expected output in separate code blocks
-- Explain what each flag does (at least first time)
-
-**Configuration examples:**
+**Configuration:**
 - Match `.env.example` format exactly
-- Show both optional and required variables
-- Include inline comments for complex variables
-- Use realistic (but anonymized) example values
+- Include inline comments for variables
+- Use realistic (but anonymized) values
 
 **Deployment steps:**
-- Number each step, break into substeps if needed
-- Show expected output after each step
-- Provide rollback/undo instructions
-- Include success indicators (how to verify)
+- Number steps, include expected output
+- Provide success indicators
+- Include rollback instructions
 
-## File References & Paths
+## Verification Checklist (For Docwriter)
 
-**Always verify these exist before documenting:**
-- `main.py` - Entry point
-- `bot.py` - Core bot implementation
-- `fetchers/azuracast.py` - API client
-- `Dockerfile` - Docker image definition
-- `docker-compose.example.yml` - Docker Compose template
-- `setup.sh` - Bare metal setup script
-- `systemd/mansion-radio-bot.service` - Systemd service file
-- `.env.example` - Environment configuration template
-- `requirements.txt` - Python dependencies
+- ✅ All file paths exist in repo (not gitignored)
+- ✅ Code examples are tested and accurate
+- ✅ Examples match production code exactly
+- ✅ All links (internal/external) work
+- ✅ No credentials appear in ANY file
+- ✅ Anonymization is consistent
+- ✅ Configuration examples match .env.example
+- ✅ Deployment steps are validated
 
-**Do NOT document:**
-- `docker-compose.yml` - This is production, gitignored, use `.example` version instead
-- `.env` files - These are gitignored, use `.env.example` instead
-- `logs/` directory - Generated at runtime, not committed
-- `__pycache__/` or `.pyc` files - Generated artifacts
+## When to Update Docs
 
-## Link Patterns
-
-**Internal links:**
-```markdown
-# Same directory
-See [ARCHITECTURE](./ARCHITECTURE.md)
-
-# From docs/ to root
-See [Configuration](../README.md#configuration)
-
-# From root to docs/
-See [Deployment guide](docs/DEPLOY_DOCKER.md)
-```
-
-**External links:**
-```markdown
-- [AzuraCast Docs](https://www.azuracast.com/)
-- [python-irc library](https://python-irc.readthedocs.io/)
-- [RFC 5802 SASL](https://tools.ietf.org/html/rfc5802)
-```
-
-## Version & Update Notes
-
-- **Repository:** https://github.com/Pontuzz/mansionradio
-- **License:** MIT
-- **Last Updated:** 2026-02-05
-- **Python Version:** 3.8+
-- **IRC Standard:** RFC 1459 with modern extensions (CAP negotiation)
-
-## Maintenance
-
-- All docs should reference specific code sections with `file:line_number` format
-- Update docs when:
-  - New features are added
-  - Default values in code change
-  - Command outputs or log formats change
-  - New deployment methods are supported
-- Remove docs when:
-  - Features are deprecated
-  - Deployment methods are no longer supported
-  - Issues are resolved and workarounds no longer needed
-
-## Testing Documentation
-
-Before publishing doc updates:
-- Test all code examples (run them, verify output)
-- Verify all file paths exist (check repo structure)
-- Follow all deployment steps on target platform
-- Validate all links work (especially cross-document references)
-- Check that anonymized examples are consistent across docs
-
-## Project Classification: Public OSS
-
-This project follows the **Public Open-Source** pattern:
-- ✅ Source code IS committed to repository
-- ✅ Only credentials (`.env`, `.key`) are gitignored
-- ✅ Examples (`.example` files) are committed
-- ✅ Users clone and deploy directly (minimal customization)
-- 🌍 Intended for public GitHub release
-
-**Contrast:** Internal production tools (like `docs/scrapers/` templates) would have source code gitignored. This project doesn't - it's publicly shareable.
-
-This affects how docwriter should verify documentation:
-- ✅ All referenced paths MUST exist in the repo
-- ✅ Examples should match production code exactly
-- ✅ No credentials should appear anywhere
-- ✅ Documentation assumes users clone and run directly
+- New features added
+- Default values change
+- Log formats or outputs change
+- New deployment methods supported
+- Bug fixes affecting usage
 
 ---
 
