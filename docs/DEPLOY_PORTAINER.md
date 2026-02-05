@@ -50,12 +50,12 @@ services:
     restart: unless-stopped
     environment:
       # IRC Configuration
-      - IRC_SERVER=irc.inthemansion.com
+      - IRC_SERVER=irc.example.com
       - IRC_PORT=6697
       - BOT_NICKNAME=MansionRadio
       - IRC_CHANNELS=#radio
       # AzuraCast API
-      - AZURACAST_API=https://radio.inthemansion.com/api/nowplaying/mansionnet
+      - AZURACAST_API=https://radio.example.com/api/nowplaying/station_id
       # Polling interval (seconds)
       - POLL_INTERVAL=15
       # Timezone
@@ -106,7 +106,7 @@ Expected output:
 ```
 [INFO] Starting MansionNET Radio Bot...
 [INFO] RadioBot initialized
-[INFO] Server: irc.inthemansion.com:6697
+[INFO] Server: irc.example.com:6697
 [INFO] Channels: #radio
 [INFO] Poll interval: 15s
 [INFO] Connected to IRC server

@@ -29,11 +29,11 @@ services:
     container_name: mansion-radio-bot
     restart: unless-stopped
     environment:
-      - IRC_SERVER=irc.inthemansion.com
+      - IRC_SERVER=irc.example.com
       - IRC_PORT=6697
       - BOT_NICKNAME=MansionRadio
       - IRC_CHANNELS=#radio
-      - AZURACAST_API=https://radio.inthemansion.com/api/nowplaying/mansionnet
+      - AZURACAST_API=https://radio.example.com/api/nowplaying/station_id
       - POLL_INTERVAL=15
       - TZ=Europe/Belgrade
     volumes:
@@ -161,11 +161,11 @@ services:
     container_name: mansion-radio-bot
     restart: unless-stopped
     environment:
-      - IRC_SERVER=irc.inthemansion.com
+      - IRC_SERVER=irc.example.com
       - IRC_PORT=6697
       - BOT_NICKNAME=MansionRadio
       - IRC_CHANNELS=#radio
-      - AZURACAST_API=https://radio.inthemansion.com/api/nowplaying/mansionnet
+      - AZURACAST_API=https://radio.example.com/api/nowplaying/station_id
       - POLL_INTERVAL=15
       - TZ=Europe/Belgrade
     volumes:

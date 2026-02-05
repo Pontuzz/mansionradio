@@ -29,3 +29,4 @@ env/
 logs/
 *.tar.gz
 .DS_Store
+docker-compose.yml

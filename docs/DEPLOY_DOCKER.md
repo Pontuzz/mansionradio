@@ -82,11 +82,11 @@ docker stats mansion-radio-bot
 The default configuration in `docker-compose.yml` is ready to use:
 ```yaml
 environment:
-  - IRC_SERVER=irc.inthemansion.com
+  - IRC_SERVER=irc.example.com
   - IRC_PORT=6697
   - BOT_NICKNAME=MansionRadio
   - IRC_CHANNELS=#radio
-  - AZURACAST_API=https://radio.inthemansion.com/api/nowplaying/mansionnet
+  - AZURACAST_API=https://radio.example.com/api/nowplaying/station_id
   - POLL_INTERVAL=15
   - TZ=Europe/Belgrade
 ```

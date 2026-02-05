@@ -1,197 +1,136 @@
-# MansionNET Radio Bot
+# MansionRadio Bot
 
-IRC bot that automatically announces songs from MansionNET Radio to your IRC channel.
+IRC bot that polls an AzuraCast instance and announces currently playing songs to IRC channels.
+
+## Architecture
+
+**State machine:** Explicit connection states (disconnected → connecting → authenticating → registered → active)
+
+**SASL authentication:** Implements RFC 5802 PLAIN mechanism with proper CAP negotiation and multiline message handling.
+
+**Polling:** Non-blocking async polling of AzuraCast API respects bot state (only announces when ACTIVE).
+
+See `docs/ARCHITECTURE.md` for detailed design and rationale.
 
 ## Quick Start
 
-Choose your deployment method:
-
-### Docker (Testing & Multi-Host)
+### Docker
 ```bash
 docker-compose up --build
 ```
-Environment variables are built into `docker-compose.yml`. See **[DEPLOY_DOCKER.md](docs/DEPLOY_DOCKER.md)** for details.
 
-### Bare Metal (Production, Like Eggdrops)
+### Bare Metal
 ```bash
 bash setup.sh
 source venv/bin/activate
 python main.py
 ```
-Then setup systemd: See **[DEPLOY_BAREMETAL.md](docs/DEPLOY_BAREMETAL.md)** for details.
-
----
 
 ## Configuration
 
-**For Docker:** Environment variables are embedded in `docker-compose.yml`:
-```yaml
-environment:
-  - IRC_SERVER=irc.inthemansion.com
-  - IRC_PORT=6697
-  - BOT_NICKNAME=MansionRadio
-  - IRC_CHANNELS=#radio
-  - AZURACAST_API=https://radio.inthemansion.com/api/nowplaying/mansionnet
-  - POLL_INTERVAL=15
-```
-
-To customize, edit `docker-compose.yml` directly or use Portainer UI.
-
-**For Bare Metal:** Create a `.env` file (copy from `.env.example`):
-
+Copy `.env.example` to `.env`:
 ```bash
-# IRC Configuration
-IRC_SERVER=irc.inthemansion.com
+IRC_SERVER=irc.example.com
 IRC_PORT=6697
 BOT_NICKNAME=MansionRadio
-IRC_CHANNELS=#radio
-
-# AzuraCast API
-AZURACAST_API=https://radio.inthemansion.com/api/nowplaying/mansionnet
-
-# Polling interval (seconds)
+IRC_CHANNELS=#radio,#music
+SASL_USERNAME=account_name      # Optional - for registered nicks
+SASL_PASSWORD=password          # Optional - for registered nicks
+AZURACAST_API=https://radio.example.com/api/nowplaying/station_id
 POLL_INTERVAL=15
 ```
 
-## How It Works
-
-1. **Connects** to IRC server with TLS encryption
-2. **Polls** AzuraCast API every 15 seconds
-3. **Detects** when a new song starts playing
-4. **Announces** the song to IRC channel(s)
-
-### Example Output
-
-```
-♫ Now playing: Tycho - Coastal Brake (Dive)
-```
+For Docker: Edit `docker-compose.yml` environment variables instead.
 
 ## Project Structure
 
 ```
-mansionradio/
-├── main.py                          # Entry point
-├── bot.py                           # IRC bot implementation
+├── main.py                      # Entry point, config loading
+├── bot.py                       # IRC bot (state machine, SASL, polling)
 ├── fetchers/
-│   ├── __init__.py
-│   └── azuracast.py                 # AzuraCast API client
-├── Dockerfile                       # Docker image definition
-├── docker-compose.yml               # Docker Compose (testing)
+│   └── azuracast.py            # AzuraCast API client
+├── Dockerfile
+├── docker-compose.example.yml
+├── setup.sh                     # Bare metal setup
 ├── systemd/
-│   └── mansion-radio-bot.service    # Systemd service file
+│   └── mansion-radio-bot.service
 ├── docs/
-│   ├── DEPLOY_DOCKER.md             # Docker deployment guide
-│   └── DEPLOY_BAREMETAL.md          # Bare metal deployment guide
-├── requirements.txt                 # Python dependencies
-├── .env.example                     # Configuration template
-├── .gitignore
-├── .dockerignore
-├── QUICKSTART.md
+│   ├── ARCHITECTURE.md          # Design & technical details
+│   ├── DEPLOY_DOCKER.md
+│   ├── DEPLOY_BAREMETAL.md
+│   ├── DEPLOY_PORTAINER.md
+│   └── TROUBLESHOOT_PORTAINER.md
+├── requirements.txt
+├── .env.example
 └── README.md
 ```
 
-## Error Handling
+## Dependencies
 
-- **API failures**: Bot continues operating; logs errors
-- **Disconnection**: Bot automatically attempts to reconnect
-- **Graceful shutdown**: Ctrl+C cleanly disconnects from IRC
+- `python-irc` - IRC protocol handling
+- `python-dotenv` - Environment config
+- `requests` - HTTP client for AzuraCast API
 
-## Troubleshooting
+## IRC Features
 
-### Bot won't connect to IRC
-- Check `IRC_SERVER` and `IRC_PORT` are correct
-- Verify port 6697 is accessible (TLS)
-- Check bot nickname isn't already in use
+- **TLS/SSL** connection
+- **SASL PLAIN** authentication with CAP negotiation
+- **Song announcements** with change detection
+- **`!playing` command** for on-demand song status
+- **Auto-reconnect** on disconnection
+- **Graceful shutdown** on Ctrl+C
 
-### Bot connects but doesn't announce
-- Verify bot successfully joined the channel (check logs)
-- Check `IRC_CHANNELS` in `.env`
-- Verify `AZURACAST_API` URL is correct
-- Check AzuraCast API is responding: `curl <API_URL>`
+## Technical Details
 
-### API connection fails
-- Test API directly: `curl https://radio.inthemansion.com/api/nowplaying/mansionnet`
-- Check internet connectivity
-- Verify `AZURACAST_API` URL in `.env`
+### SASL Flow
+```
+CAP LS 302
+← CAP LS * :...caps...
+← CAP LS :final_caps
+CAP REQ :sasl
+← CAP ACK :sasl
+AUTHENTICATE PLAIN
+← AUTHENTICATE +
+AUTHENTICATE [base64_credentials]
+← 903 SASL success
+CAP END
+← 001 WELCOME
+```
 
-## Deployment Methods
+Properly handles multiline CAP LS responses (indicated by `*` marker).
 
-### Docker (Testing & Flexible Deployment)
+### API Polling
+- Polls every N seconds (configurable)
+- Tracks song hash to detect changes
+- Only announces when bot is ACTIVE (joined channels)
+- Silently skips API errors, continues polling
 
-For local testing or deployment with Docker:
+## Deployment
 
+### Docker
 ```bash
 docker-compose up --build
 docker-compose logs -f
 ```
+See `docs/DEPLOY_DOCKER.md` and `docs/DEPLOY_PORTAINER.md`.
 
-See **[DEPLOY_DOCKER.md](docs/DEPLOY_DOCKER.md)** for full instructions.
-
-**Advantages:**
-- Isolated environment
-- Same setup across machines
-- Easy to test before production
-- Portable to any Docker-enabled system
-
-### Bare Metal (Production, Like Eggdrops)
-
-For direct deployment on Pi3 or Ubuntu VM:
-
+### Bare Metal
 ```bash
 bash setup.sh
 systemctl start mansion-radio-bot
 systemctl status mansion-radio-bot
 ```
-
-See **[DEPLOY_BAREMETAL.md](docs/DEPLOY_BAREMETAL.md)** for full instructions.
-
-**Advantages:**
-- Minimal overhead
-- Familiar systemd management
-- Like your eggdrop setup
-- Direct system integration
-
----
-
-## Error Handling
-
-- **API failures**: Bot continues operating; logs errors
-- **Disconnection**: Bot automatically attempts to reconnect
-- **Graceful shutdown**: Ctrl+C cleanly disconnects from IRC
+See `docs/DEPLOY_BAREMETAL.md`.
 
 ## Troubleshooting
 
-### Bot won't connect to IRC
-- Check `IRC_SERVER` and `IRC_PORT` are correct
-- Verify port 6697 is accessible (TLS)
-- Check bot nickname isn't already in use
+**Won't connect:** Check IRC_SERVER:IRC_PORT accessibility and bot nickname availability.
 
-### Bot connects but doesn't announce
-- Verify bot successfully joined the channel (check logs)
-- Check `IRC_CHANNELS` in `.env`
-- Verify `AZURACAST_API` URL is correct
-- Check AzuraCast API is responding: `curl <API_URL>`
+**Connects but no announcements:** Verify bot joined channel (check logs), AZURACAST_API is correct, API is responding.
 
-### API connection fails
-- Test API directly: `curl https://radio.inthemansion.com/api/nowplaying/mansionnet`
-- Check internet connectivity
-- Verify `AZURACAST_API` URL in `.env`
+**API connection fails:** Test with `curl <AZURACAST_API>`, verify URL syntax, check network connectivity.
 
----
-
-## Further Development
-
-The bot is ready for enhancements:
-- Add listener count to announcements
-- Show next song in queue
-- Add `!np` command for on-demand requests
-- Store song history
-- Display genre/mood information
-- Multi-station support
-
-See AzuraCast API docs for available data fields.
-
----
+See `docs/TROUBLESHOOT_PORTAINER.md` for Portainer-specific issues.
 
 ## License
 

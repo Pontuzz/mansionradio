@@ -2,21 +2,22 @@ version: '3.8'
 
 services:
   mansion-radio-bot:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      # Disable BuildKit to avoid frame size issues in Portainer
-      # network: host
+    image: mansion-radio-bot:latest
     container_name: mansion-radio-bot
+    user: "1000:1000"
     restart: unless-stopped
     environment:
       # IRC Configuration
-      - IRC_SERVER=irc.inthemansion.com
+      - IRC_SERVER=irc.example.com
       - IRC_PORT=6697
       - BOT_NICKNAME=MansionRadio
-      - IRC_CHANNELS=#bots
+      - IRC_CHANNELS=#radio
+      # SASL authentication (for registered nicks)
+      # SASL_USERNAME is optional - defaults to BOT_NICKNAME if not set
+      - SASL_USERNAME=your_sasl_username_here
+      - SASL_PASSWORD=your_sasl_password_here
       # AzuraCast API
-      - AZURACAST_API=https://radio.inthemansion.com/api/nowplaying/mansionnet
+      - AZURACAST_API=https://radio.example.com/api/nowplaying/station_id
       # Polling interval (seconds)
       - POLL_INTERVAL=10
       # Timezone

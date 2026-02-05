@@ -9,7 +9,7 @@ This guide covers deploying the radio bot directly on a machine (Pi3, Ubuntu VM,
 - **OS:** Ubuntu 20.04+ or Raspberry Pi OS
 - **Python:** 3.9 or higher
 - **User:** Dedicated `radiobot` user (recommended)
-- **Network:** Access to irc.inthemansion.com:6697
+- **Network:** Access to irc.example.com:6697
 
 ### Check Python Version
 
@@ -89,11 +89,11 @@ nano .env
 
 Set your values:
 ```bash
-IRC_SERVER=irc.inthemansion.com
+IRC_SERVER=irc.example.com
 IRC_PORT=6697
 BOT_NICKNAME=MansionRadio
 IRC_CHANNELS=#radio
-AZURACAST_API=https://radio.inthemansion.com/api/nowplaying/mansionnet
+AZURACAST_API=https://radio.example.com/api/nowplaying/station_id
 POLL_INTERVAL=15
 ```
 
@@ -110,7 +110,7 @@ Should output:
 ```
 [INFO] Starting MansionNET Radio Bot...
 [INFO] RadioBot initialized
-[INFO] Server: irc.inthemansion.com:6697
+[INFO] Server: irc.example.com:6697
 [INFO] Channels: #radio
 [INFO] Poll interval: 15s
 [INFO] Connected to IRC server
@@ -283,14 +283,14 @@ cat .env
 
 Verify IRC server is reachable:
 ```bash
-nc -zv irc.inthemansion.com 6697
+nc -zv irc.example.com 6697
 ```
 
 ### API connection fails
 
 Test the API endpoint:
 ```bash
-curl -s https://radio.inthemansion.com/api/nowplaying/mansionnet | head -20
+curl -s https://radio.example.com/api/nowplaying/station_id | head -20
 ```
 
 ---
