@@ -1,12 +1,3 @@
----
-title: MansionRadio Bot
-description: IRC bot that polls AzuraCast and announces songs to IRC channels
-audience: beginner
-completeness: 100%
-last_updated: 2026-02-05
-maintainer: Pontuzz
----
-
 # MansionRadio Bot
 
 IRC bot that polls an AzuraCast instance and announces currently playing songs to IRC channels.
