@@ -1,52 +1,93 @@
 # Portainer Deployment Guide
 
-Deploy the MansionNET Radio Bot to Portainer without needing external `.env` files.
+Deploy the MansionRadio Bot to Portainer without needing external `.env` files. This guide assumes you have Portainer running and are familiar with the UI.
 
 ---
 
 ## Prerequisites
 
-- Portainer installed and running
-- Docker and Docker Compose available
-- Access to Portainer UI
+- **Portainer:** Installed and running (version 2.0+)
+- **Docker:** Available on the Portainer host
+- **Network:** Host has access to IRC server and AzuraCast API
 
 ---
 
-## Step-by-Step Deployment
+## Option 1: Deploy from Git Repository (Recommended)
 
-### 1. Copy docker-compose.yml to Portainer Host
+This automatically syncs your code from GitHub.
 
-Get the contents of `docker-compose.yml`:
-
-```bash
-cat ~/projects/mansionradio/docker-compose.yml
-```
-
-Or copy the entire project:
-```bash
-scp -r ~/projects/mansionradio user@portainer-host:~/
-```
-
----
-
-### 2. In Portainer UI
+### Step 1: In Portainer UI
 
 **Navigate to:** Stacks → Add Stack
 
-**Option A: Paste Compose File**
+### Step 2: Select Repository
+
+1. Choose **Repository** as the build method
+2. Select **GitHub** (or your git provider)
+3. Fill in:
+   - **Repository URL:** `https://github.com/Pontuzz/mansionradio.git`
+   - **Compose path:** `docker/docker-compose.example.yml`
+   - **Auto-update:** ✅ (to sync new code)
+
+### Step 3: Configure Environment Variables
+
+Before deploying, add these environment variables in Portainer:
+
+**Name:** `mansion-radio-bot`
+
+Under "Environment variables" section, add:
+
+```
+IRC_SERVER=irc.example.com
+IRC_PORT=6697
+BOT_NICKNAME=MansionRadio
+IRC_CHANNELS=#radio
+SASL_USERNAME=your_account_name
+SASL_PASSWORD=your_password
+AZURACAST_API=https://radio.example.com/api/nowplaying/station_id
+POLL_INTERVAL=15
+TZ=UTC
+```
+
+### Step 4: Deploy
+
+Click **Deploy the stack**
+
+Wait for the build to complete. Expected time: 1-2 minutes.
+
+---
+
+## Option 2: Deploy from Web Editor (Quick Manual)
+
+If you don't have git configured or want to deploy quickly.
+
+### Step 1: Copy docker-compose File
+
+Get the example docker-compose file from your workstation:
+
+```bash
+cat ~/projects/mansionradio/docker/docker-compose.example.yml
+```
+
+Or download/copy the raw file from: https://raw.githubusercontent.com/Pontuzz/mansionradio/main/docker/docker-compose.example.yml
+
+### Step 2: In Portainer UI
+
+**Navigate to:** Stacks → Add Stack
+
+### Step 3: Paste Configuration
 
 1. Choose **Web Editor**
-2. Paste the entire contents of `docker-compose.yml`:
+2. Paste the entire `docker-compose.example.yml` content:
 
 ```yaml
 version: '3.8'
 
 services:
   mansion-radio-bot:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: mansion-radio-bot:latest
     container_name: mansion-radio-bot
+    user: "1000:1000"
     restart: unless-stopped
     environment:
       # IRC Configuration
@@ -54,18 +95,21 @@ services:
       - IRC_PORT=6697
       - BOT_NICKNAME=MansionRadio
       - IRC_CHANNELS=#radio
+      # SASL authentication (for registered nicks)
+      - SASL_USERNAME=your_sasl_username_here
+      - SASL_PASSWORD=your_sasl_password_here
       # AzuraCast API
       - AZURACAST_API=https://radio.example.com/api/nowplaying/station_id
       # Polling interval (seconds)
       - POLL_INTERVAL=15
       # Timezone
-      - TZ=Europe/Belgrade
+      - TZ=UTC
     volumes:
       - ./logs:/app/logs
     networks:
       - mansion-net
     healthcheck:
-      test: ["CMD", "pgrep", "-f", "python main.py"]
+      test: ["CMD", "pgrep", "-f", "python src/main.py"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -76,31 +120,111 @@ networks:
     driver: bridge
 ```
 
-3. **Name:** `mansion-radio-bot`
-4. **Deploy the stack**
+### Step 4: Edit Environment Variables
 
-**Option B: Upload Files**
+Update these values in the `environment` section to match your setup:
 
-1. Choose **Repository**
-2. Select **Git** and provide your repo URL (if using git)
-   - Or use **Upload** to upload the `docker-compose.yml` and `Dockerfile`
+```yaml
+environment:
+  - IRC_SERVER=irc.example.com              # Your IRC server
+  - IRC_PORT=6697                           # Usually 6697 (TLS) or 6667
+  - BOT_NICKNAME=MansionRadio               # Bot nickname
+  - IRC_CHANNELS=#radio                     # Channels (comma-separated)
+  - SASL_USERNAME=your_account_name         # If using registered nick
+  - SASL_PASSWORD=your_password             # SASL password
+  - AZURACAST_API=https://radio.example... # Your AzuraCast API endpoint
+  - POLL_INTERVAL=15                        # Seconds between checks
+  - TZ=UTC                                  # Timezone
+```
 
-3. Configure:
-   - **Compose path:** `docker-compose.yml`
-   - **Deploy the stack**
+### Step 5: Deploy
+
+1. **Name:** `mansion-radio-bot`
+2. Click **Deploy the stack**
 
 ---
 
-## 3. Verify Deployment
+## Option 3: Pre-Built Image (Fastest, No Build)
+
+If you prefer to pre-build the image on your Docker host first.
+
+### Step 1: Build Image on Host
+
+SSH to your Docker host and build the image:
+
+```bash
+cd ~/projects/mansionradio
+docker build -f docker/Dockerfile -t mansion-radio-bot:latest .
+
+# Verify it was built
+docker images | grep mansion-radio-bot
+```
+
+### Step 2: Update docker-compose.yml
+
+In Portainer, use this simpler docker-compose.yml (it won't build, just uses the pre-built image):
+
+```yaml
+version: '3.8'
+
+services:
+  mansion-radio-bot:
+    image: mansion-radio-bot:latest        # Uses pre-built image
+    container_name: mansion-radio-bot
+    user: "1000:1000"
+    restart: unless-stopped
+    environment:
+      - IRC_SERVER=irc.example.com
+      - IRC_PORT=6697
+      - BOT_NICKNAME=MansionRadio
+      - IRC_CHANNELS=#radio
+      - SASL_USERNAME=your_account_name
+      - SASL_PASSWORD=your_password
+      - AZURACAST_API=https://radio.example.com/api/nowplaying/station_id
+      - POLL_INTERVAL=15
+      - TZ=UTC
+    volumes:
+      - ./logs:/app/logs
+    networks:
+      - mansion-net
+    healthcheck:
+      test: ["CMD", "pgrep", "-f", "python src/main.py"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+networks:
+  mansion-net:
+    driver: bridge
+```
+
+### Step 3: Deploy
+
+**Stacks** → **Add Stack** → Paste above → **Deploy the stack**
+
+Deployment is instant (no build step needed).
+
+---
+
+## Verify Deployment
 
 ### Check Stack Status
-1. Go to **Stacks** → **mansion-radio-bot**
-2. Verify all containers are running (green status)
+
+1. **Portainer:** Stacks → **mansion-radio-bot**
+2. Verify the container shows as **Running** (green status)
+
+Expected:
+```
+Status: Running
+Container: mansion-radio-bot (1)
+```
 
 ### View Logs
-1. Click the stack
-2. Click **mansion-radio-bot** container
-3. View **Logs** tab
+
+1. Click the stack name → **mansion-radio-bot** container
+2. Click **Logs** tab
+3. Check "Auto-scroll" for real-time updates
 
 Expected output:
 ```
@@ -113,93 +237,264 @@ Expected output:
 [INFO] Joined #radio
 ```
 
+**Success indicator:** You should see "Joined #radio" (or whatever your channels are).
+
+### Monitor Health
+
+1. **Stacks** → **mansion-radio-bot**
+2. Look for **Health Status: Healthy** (green checkmark)
+
+The health check runs every 30 seconds to verify the bot is still running.
+
 ---
 
 ## Customizing Configuration
 
-### Method 1: Edit Stack in Portainer
+### Method 1: Edit Stack in Portainer (Recommended)
 
 1. **Stacks** → **mansion-radio-bot** → **Editor**
 2. Find the `environment:` section
-3. Change values (e.g., `BOT_NICKNAME`, `IRC_CHANNELS`)
-4. **Update the stack**
+3. Change values as needed
+4. Click **Update the stack**
 
 Example changes:
 ```yaml
 environment:
-  - BOT_NICKNAME=MyCustomBotName
+  - BOT_NICKNAME=MyCustomName
   - IRC_CHANNELS=#radio,#music,#lounge
   - POLL_INTERVAL=30
 ```
 
-### Method 2: Update docker-compose.yml Before Deployment
+The stack will restart with new settings immediately.
 
-Edit the file on your machine, then upload/deploy again.
+### Method 2: Edit docker-compose.yml Before Deployment
+
+If the stack isn't running yet, just edit the compose file before clicking Deploy.
+
+### Method 3: Use Portainer Environment Variables
+
+Some Portainer setups support:
+1. **Stacks** → **mansion-radio-bot** → **Settings**
+2. Define custom variables
+3. Reference with `${VARIABLE_NAME}` in compose file
 
 ---
 
-## Management
-
-### Stop Stack
-**Stacks** → **mansion-radio-bot** → **Stop**
+## Stack Management
 
 ### Start Stack
+
 **Stacks** → **mansion-radio-bot** → **Start**
 
+Starts all containers in the stack.
+
+### Stop Stack
+
+**Stacks** → **mansion-radio-bot** → **Stop**
+
+Gracefully stops the bot container.
+
 ### Restart Stack
+
 **Stacks** → **mansion-radio-bot** → **Restart**
 
+Restarts all containers (useful if bot gets stuck).
+
+### Update Stack
+
+**Stacks** → **mansion-radio-bot** → **Editor** → **Update the stack**
+
+- If code changed (git repo): Rebuilds the image
+- If only environment variables changed: Restarts with new config
+
 ### Delete Stack
-**Stacks** → **mansion-radio-bot** → **Remove** (choose "Remove volume" if desired)
+
+**Stacks** → **mansion-radio-bot** → **Remove**
+
+Choose:
+- ✅ **Remove volume** - Deletes logs (if using volume mount)
+- ❌ **Keep volume** - Preserves logs
 
 ### View Real-Time Logs
-Click the stack → Click **mansion-radio-bot** → **Logs** (check "Auto-scroll")
 
-### Rebuild Image
-**Stacks** → **mansion-radio-bot** → **Editor** → **Update the stack**
-(This will rebuild the image if `Dockerfile` changed)
+1. **Stacks** → **mansion-radio-bot** → container **mansion-radio-bot**
+2. **Logs** tab
+3. ✅ Check "Auto-scroll" for live updates
+
+Press `Ctrl+C` or close to stop following logs.
+
+---
+
+## Monitoring & Maintenance
+
+### Check Container Stats
+
+1. **Containers** → Find **mansion-radio-bot**
+2. Click it, then **Stats** tab
+
+Expected resource usage:
+- **Memory:** 40-100 MB
+- **CPU:** 0-5% (idle most of the time)
+- **Network:** Minimal (one announcement per song change)
+
+### View Event History
+
+1. **Stacks** → **mansion-radio-bot**
+2. Click **Events** tab
+
+Shows when containers started, stopped, restarted, etc.
+
+### Update Image
+
+If you've pushed a new image to Docker Hub:
+
+1. **Images** → **Pull image**
+2. Enter `mansion-radio-bot:latest`
+3. Then update the stack (will use new image)
 
 ---
 
 ## Troubleshooting
 
-### Container won't start
-1. Check **Logs** tab for errors
-2. Verify IRC server is accessible (port 6697)
-3. Check AzuraCast API is responding
+### Container won't start / stays in "Not running" state
 
-### Bot connects but doesn't announce
-1. Verify `IRC_CHANNELS` is correct
-2. Check bot successfully joined channel (see logs)
-3. Verify AzuraCast API is working
+**Check the logs:**
+1. **Stacks** → **mansion-radio-bot** → container
+2. **Logs** tab
+3. Look for error messages
+
+**Common issues:**
+
+- **"IRC server not reachable"**
+  - Verify `IRC_SERVER` and `IRC_PORT` are correct
+  - Test from host: `nc -zv irc.example.com 6697`
+
+- **"SASL authentication failed"**
+  - Verify `SASL_USERNAME` and `SASL_PASSWORD`
+  - Try disabling SASL temporarily (set `SASL_PASSWORD=""`)
+
+- **"API connection failed"**
+  - Check `AZURACAST_API` URL is correct
+  - Test: `curl https://radio.example.com/api/nowplaying/station_id`
+
+### Bot connects but doesn't announce songs
+
+**Check API connectivity:**
+```bash
+# From Portainer host
+curl https://radio.example.com/api/nowplaying/station_id | head -20
+```
+
+**Check logs for API errors:**
+1. **Stacks** → **mansion-radio-bot** → **Logs**
+2. Search for "error" or "exception"
+
+**Verify bot joined the channel:**
+- Join the IRC channel manually
+- You should see the bot in the user list
+
+### Health check failing
+
+If Health Status shows "Unhealthy":
+
+1. **Stacks** → **mansion-radio-bot** → **Restart** to try recovering
+2. Check logs for crash indicators
+3. Increase `start_period` in docker-compose if bot needs more time to start:
+   ```yaml
+   healthcheck:
+     start_period: 30s  # Increased from 10s
+   ```
 
 ### High memory usage
-1. Check **Stats** for the container
-2. Alpine + Python should use <100MB
-3. If higher, check for memory leaks
+
+**Check stats:**
+1. **Containers** → **mansion-radio-bot** → **Stats**
+
+If >200MB:
+- Restart the container (**Restart** button)
+- Check for memory leaks in logs
+- Rebuild image: delete stack and redeploy with fresh image
 
 ### Need to rebuild image
-If you updated `Dockerfile` or dependencies:
-1. Edit stack
-2. Change something minor (add/remove space) to force update
-3. Or delete and redeploy stack with new code
+
+If you've updated code (from git):
+
+1. **Stacks** → **mansion-radio-bot** → **Editor**
+2. Make any trivial change (e.g., add/remove whitespace)
+3. **Update the stack**
+4. Portainer will rebuild the image from git
+
+Or delete and redeploy:
+1. **Remove** the stack (keeping or removing volume as needed)
+2. **Add Stack** again with updated configuration
 
 ---
 
-## Important Notes
+## Advanced Configuration
 
-- **No .env file needed** - Configuration is in `docker-compose.yml`
-- **Environment variables** can be edited directly in Portainer UI
-- **Restart policy** is set to `unless-stopped` - will auto-restart on failure
-- **Health check** runs every 30 seconds to monitor bot status
-- **Logs volume** is optional - remove if you don't need persistent logs
+### Multiple Instances for Different Networks
+
+Create separate stacks for different IRC networks:
+
+**Stack 1: LibreChat**
+```yaml
+services:
+  mansion-radio-bot-libera:
+    image: mansion-radio-bot:latest
+    environment:
+      - IRC_SERVER=irc.libera.chat
+      - BOT_NICKNAME=RadioBot1
+      # ... other settings
+```
+
+**Stack 2: Undernet**
+```yaml
+services:
+  mansion-radio-bot-undernet:
+    image: mansion-radio-bot:latest
+    environment:
+      - IRC_SERVER=irc.undernet.org
+      - BOT_NICKNAME=RadioBot2
+      # ... other settings
+```
+
+Manage each separately in Portainer.
+
+### Persistent Logs
+
+The compose file includes volume mount for logs:
+```yaml
+volumes:
+  - ./logs:/app/logs
+```
+
+Logs are stored on the host in `./logs/` directory (relative to docker-compose location).
+
+### Network Troubleshooting
+
+To debug network issues from within the container:
+
+1. **Containers** → **mansion-radio-bot**
+2. **Exec Console** tab
+3. Run commands in container:
+   ```bash
+   nslookup irc.example.com
+   nc -zv irc.example.com 6697
+   curl https://radio.example.com/api/nowplaying/station_id
+   ```
 
 ---
 
 ## Next Steps
 
-1. Verify bot joins IRC channel `#radio`
-2. Wait for first song change (max 15 seconds)
-3. Bot should announce: `♫ Now playing: Artist - Title (Album)`
+1. ✅ Deploy stack (via git or web editor)
+2. ✅ Configure environment variables
+3. ✅ Verify bot connects to IRC
+4. ✅ Wait for first song announcement (max 15 seconds)
+5. ✅ Monitor logs regularly
 
-That's it! Your bot is running in Portainer.
+**Need Docker build troubleshooting?** See [TROUBLESHOOT_PORTAINER.md](TROUBLESHOOT_PORTAINER.md)
+
+**Need general Docker help?** See [DEPLOY_DOCKER.md](DEPLOY_DOCKER.md)
+
+**Need bare metal deployment?** See [DEPLOY_BAREMETAL.md](DEPLOY_BAREMETAL.md)

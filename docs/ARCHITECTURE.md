@@ -119,7 +119,7 @@ When a song change is detected:
 - Eggdrop learned this after 25 years: explicit state wins
 
 **Our Solution:**
-- `BotState` enum with 5 distinct states
+- `BotState` enum with 5 distinct states (see `src/bot.py`)
 - Every state transition is logged
 - Code can assert preconditions (e.g., only announce when ACTIVE)
 
@@ -232,11 +232,108 @@ POLL_INTERVAL=10             # Seconds between API polls
 
 ## Files & Responsibilities
 
-- **bot.py**: Core IRC bot with state machine and SASL
-- **main.py**: Configuration loading and entry point
-- **fetchers/azuracast.py**: AzuraCast API client
+- **src/main.py**: Configuration loading and entry point
+- **src/bot.py**: Core IRC bot with state machine and SASL
+- **src/fetchers/azuracast.py**: AzuraCast API client
 - **requirements.txt**: Python dependencies
-- **Dockerfile**: Container build (Python 3.11 Alpine, uid 1000)
+- **docker/Dockerfile**: Container build (Python 3.11 Alpine, uid 1000)
+- **systemd/mansion-radio-bot.service**: Systemd service template
+- **config/.env.example**: Configuration template
+- **scripts/setup.sh**: Automated setup script
+
+## Directory Structure
+
+```
+mansion-radio-bot/
+├── src/
+│   ├── main.py                      # Entry point & config loading
+│   ├── bot.py                       # IRC bot core
+│   └── fetchers/
+│       ├── __init__.py
+│       └── azuracast.py             # AzuraCast API client
+├── docker/
+│   ├── Dockerfile                   # Container build
+│   ├── docker-compose.example.yml   # Docker Compose template
+│   └── .dockerignore                # Build context optimization
+├── scripts/
+│   ├── setup.sh                     # Automated bare-metal setup
+│   └── build.sh                     # Docker build helper
+├── config/
+│   └── .env.example                 # Configuration template
+├── systemd/
+│   └── mansion-radio-bot.service    # Systemd service template
+├── docs/
+│   ├── ARCHITECTURE.md              # This file
+│   ├── DEPLOY_DOCKER.md             # Docker deployment guide
+│   ├── DEPLOY_BAREMETAL.md          # Bare metal/systemd guide
+│   ├── DEPLOY_PORTAINER.md          # Portainer deployment guide
+│   ├── TROUBLESHOOT_PORTAINER.md    # Docker troubleshooting
+│   ├── AGENTS.md                    # Project guidelines for agents
+│   └── README.md                    # Documentation index
+├── README.md                        # Project README
+├── requirements.txt                 # Python dependencies
+├── .gitignore
+└── .git/
+```
+
+## Code Flow
+
+### Startup
+
+1. **src/main.py** is executed
+2. Load `.env` file (or environment variables)
+3. Validate required configuration
+4. Create `RadioBot` instance
+5. Start bot connection thread
+6. Start polling thread
+7. Main thread waits for shutdown signal
+
+### Connection Sequence
+
+1. TCP connect to IRC server (TLS/SSL)
+2. Send `CAP LS` to check capabilities
+3. Parse server response for SASL support
+4. If SASL configured: Enter AUTHENTICATING state
+   - Send `AUTHENTICATE PLAIN`
+   - Wait for `AUTHENTICATE +`
+   - Send base64-encoded credentials
+   - Wait for 903 (success) or 904 (failure)
+5. Send `CAP END`
+6. Wait for `001 WELCOME`
+7. Enter REGISTERED state
+8. Join configured channels
+9. Enter ACTIVE state (ready to announce)
+
+### Polling Loop
+
+1. Sleep until next poll time
+2. Check bot is in ACTIVE state
+3. Call AzuraCast API
+4. Parse response for current song ID
+5. Compare to last song ID
+6. If changed: Announce in all channels
+7. Update last song ID
+8. Repeat
+
+### Message Handlers
+
+Raw messages are parsed via `on_all_raw_messages()` to properly handle minimal-argument commands.
+
+Event handlers (`on_welcome`, `on_join`, `on_privmsg`) handle higher-level events.
+
+## Import Paths
+
+When importing from the project:
+```python
+from src.bot import RadioBot          # From project root
+from src.fetchers.azuracast import AzuraCastFetcher
+```
+
+When running from within src/:
+```python
+from bot import RadioBot              # Direct imports (if src/ is in PYTHONPATH)
+from fetchers.azuracast import AzuraCastFetcher
+```
 
 ## References & Inspiration
 
@@ -244,3 +341,4 @@ POLL_INTERVAL=10             # Seconds between API polls
 - **RFC 3954**: SASL PLAIN over IRC
 - **RFC 4616**: SASL PLAIN authentication mechanism
 - **Python irc library**: https://python-irc.readthedocs.io/
+
