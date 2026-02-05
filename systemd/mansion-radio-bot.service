@@ -10,7 +10,7 @@ User=radiobot
 Group=radiobot
 WorkingDirectory=/home/radiobot/mansion-radio-bot
 Environment="PATH=/home/radiobot/mansion-radio-bot/venv/bin"
-ExecStart=/home/radiobot/mansion-radio-bot/venv/bin/python main.py
+ExecStart=/home/radiobot/mansion-radio-bot/venv/bin/python src/main.py
 Restart=always
 RestartSec=10
 StandardOutput=journal

@@ -20,14 +20,14 @@ services:
       - AZURACAST_API=https://radio.example.com/api/nowplaying/station_id
       # Polling interval (seconds)
       - POLL_INTERVAL=10
-      # Timezone
-      - TZ=Europe/Belgrade
+       # Timezone
+       - TZ=UTC
     volumes:
       - ./logs:/app/logs
     networks:
       - mansion-net
     healthcheck:
-      test: ["CMD", "pgrep", "-f", "python main.py"]
+      test: ["CMD", "pgrep", "-f", "python src/main.py"]
       interval: 30s
       timeout: 10s
       retries: 3

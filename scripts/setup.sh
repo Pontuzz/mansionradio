@@ -32,7 +32,7 @@ pip install -r requirements.txt
 # Create .env file if it doesn't exist
 if [ ! -f ".env" ]; then
     echo "[*] Creating .env file from template..."
-    cp .env.example .env
+    cp config/.env.example .env
     echo "[!] Edit .env with your configuration before running the bot"
 else
     echo "[*] .env file already exists"
@@ -44,4 +44,4 @@ echo ""
 echo "Next steps:"
 echo "  1. Edit .env with your IRC server settings"
 echo "  2. Run: source venv/bin/activate"
-echo "  3. Run: python main.py"
+echo "  3. Run: python src/main.py"

@@ -15,9 +15,8 @@ COPY requirements.txt .
 # Install Python dependencies with increased timeout
 RUN pip install --no-cache-dir --default-timeout=1000 -r requirements.txt
 
-# Copy application code
-COPY main.py bot.py ./
-COPY fetchers ./fetchers
+# Copy application code from src/
+COPY src/ ./src
 
 # Create non-root user for security (uid/gid 1000)
 RUN addgroup -g 1000 radiobot && \
@@ -27,4 +26,4 @@ RUN addgroup -g 1000 radiobot && \
 USER radiobot
 
 # Run the bot
-CMD ["python", "main.py"]
+CMD ["python", "src/main.py"]

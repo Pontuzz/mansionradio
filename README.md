@@ -30,14 +30,14 @@ docker-compose up --build
 
 ### Bare Metal
 ```bash
-bash setup.sh
+bash scripts/setup.sh
 source venv/bin/activate
-python main.py
+python src/main.py
 ```
 
 ## Configuration
 
-Copy `.env.example` to `.env`:
+Copy `config/.env.example` to `.env`:
 ```bash
 IRC_SERVER=irc.example.com
 IRC_PORT=6697
@@ -49,29 +49,39 @@ AZURACAST_API=https://radio.example.com/api/nowplaying/station_id
 POLL_INTERVAL=15
 ```
 
-For Docker: Edit `docker-compose.yml` environment variables instead.
+For Docker: Edit `docker/docker-compose.yml` environment variables instead.
 
 ## Project Structure
 
 ```
-├── main.py                      # Entry point, config loading
-├── bot.py                       # IRC bot (state machine, SASL, polling)
-├── fetchers/
-│   └── azuracast.py            # AzuraCast API client
-├── Dockerfile
-├── docker-compose.example.yml
-├── setup.sh                     # Bare metal setup
+mansionradio/
+├── README.md                      # This file
+├── requirements.txt               # Python dependencies
+├── src/
+│   ├── main.py                   # Entry point, config loading
+│   ├── bot.py                    # IRC bot (state machine, SASL, polling)
+│   └── fetchers/
+│       └── azuracast.py          # AzuraCast API client
+├── docker/
+│   ├── Dockerfile
+│   ├── docker-compose.example.yml
+│   ├── docker-compose.yml        # Production config (gitignored)
+│   └── .dockerignore
+├── scripts/
+│   ├── setup.sh                  # Bare metal setup
+│   └── build.sh                  # Docker build helper
+├── config/
+│   └── .env.example              # Configuration template
 ├── systemd/
-│   └── mansion-radio-bot.service
-├── docs/
-│   ├── ARCHITECTURE.md          # Design & technical details
-│   ├── DEPLOY_DOCKER.md
-│   ├── DEPLOY_BAREMETAL.md
-│   ├── DEPLOY_PORTAINER.md
-│   └── TROUBLESHOOT_PORTAINER.md
-├── requirements.txt
-├── .env.example
-└── README.md
+│   └── mansion-radio-bot.service # Systemd service file
+└── docs/
+    ├── README.md                 # Documentation index
+    ├── AGENTS.md                 # Project guidelines for agents
+    ├── ARCHITECTURE.md           # Design & technical details
+    ├── DEPLOY_DOCKER.md
+    ├── DEPLOY_BAREMETAL.md
+    ├── DEPLOY_PORTAINER.md
+    └── TROUBLESHOOT_PORTAINER.md
 ```
 
 ## Dependencies
@@ -118,6 +128,7 @@ Properly handles multiline CAP LS responses (indicated by `*` marker).
 
 ### Docker
 ```bash
+cd docker
 docker-compose up --build
 docker-compose logs -f
 ```
@@ -125,7 +136,7 @@ See `docs/DEPLOY_DOCKER.md` and `docs/DEPLOY_PORTAINER.md`.
 
 ### Bare Metal
 ```bash
-bash setup.sh
+bash scripts/setup.sh
 systemctl start mansion-radio-bot
 systemctl status mansion-radio-bot
 ```
