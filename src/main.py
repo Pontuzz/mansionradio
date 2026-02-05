@@ -16,6 +16,11 @@ logging.basicConfig(
         logging.StreamHandler(sys.stdout),
     ],
 )
+
+# Suppress debug spam from irc.bot library
+logging.getLogger("irc").setLevel(logging.INFO)
+logging.getLogger("irc.bot").setLevel(logging.INFO)
+
 logger = logging.getLogger(__name__)
 
 
