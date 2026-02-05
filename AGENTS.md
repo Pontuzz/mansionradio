@@ -151,6 +151,23 @@ Before publishing doc updates:
 - Validate all links work (especially cross-document references)
 - Check that anonymized examples are consistent across docs
 
+## Project Classification: Public OSS
+
+This project follows the **Public Open-Source** pattern:
+- ✅ Source code IS committed to repository
+- ✅ Only credentials (`.env`, `.key`) are gitignored
+- ✅ Examples (`.example` files) are committed
+- ✅ Users clone and deploy directly (minimal customization)
+- 🌍 Intended for public GitHub release
+
+**Contrast:** Internal production tools (like `docs/scrapers/` templates) would have source code gitignored. This project doesn't - it's publicly shareable.
+
+This affects how docwriter should verify documentation:
+- ✅ All referenced paths MUST exist in the repo
+- ✅ Examples should match production code exactly
+- ✅ No credentials should appear anywhere
+- ✅ Documentation assumes users clone and run directly
+
 ---
 
 **Last Updated:** 2026-02-05
