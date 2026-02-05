@@ -1,10 +1,10 @@
-# HS01 Deployment - Complete Checklist
+# Docker Host Deployment - Complete Checklist
 
 **Current Configuration:**
-- Polling interval: **10 seconds** (just changed)
+- Polling interval: **10 seconds**
 - Bot nickname: **MansionRadio**
 - IRC server: **irc.inthemansion.com:6697** (TLS)
-- Channel: **#radio**
+- Channel: **#bots** (temporary for testing, use #radio for production)
 - Features: Auto-announce on song change + !playing command
 
 ---
@@ -12,28 +12,35 @@
 ## Pre-Deployment Checklist
 
 - [ ] Verify all code is committed (if using git)
-- [ ] Docker daemon running on HS01
-- [ ] Portainer accessible on HS01
-- [ ] SSH access to HS01 confirmed
+- [ ] Docker daemon running on your Docker host
+- [ ] Portainer accessible on your Docker host
+- [ ] SSH access to Docker host confirmed
 - [ ] Sufficient disk space (~500MB for image)
 
 ---
 
 ## Deployment Steps
 
-### Step 1: Copy Project to HS01
+### Step 1: Copy Project to Your Docker Host
 
+**Using Git (Recommended):**
 ```bash
-# From your WSL2 machine
-scp -r ~/projects/mansionradio user@hs01:~/
+# Clone from GitHub to your Docker host
+ssh [username]@[your-docker-host]
+cd ~
+git clone https://github.com/pontuzz/mansionradio.git
+cd mansionradio
+```
 
-# Or if using IP:
-scp -r ~/projects/mansionradio user@192.168.1.20:~/
+**Or using SCP:**
+```bash
+# From your local machine
+scp -r ~/projects/mansionradio [username]@[your-docker-host]:~/
 ```
 
 **Verify copy was successful:**
 ```bash
-ssh user@hs01 "ls -la ~/mansionradio"
+ssh [username]@[your-docker-host] "ls -la ~/mansionradio"
 ```
 
 Should show:
@@ -49,19 +56,21 @@ etc.
 
 ---
 
-### Step 2: Build Docker Image on HS01
+### Step 2: Build Docker Image on Your Docker Host
 
+**SSH to your Docker host:**
 ```bash
-# SSH into HS01
-ssh user@hs01
-
-# Navigate to project
+ssh [username]@[your-docker-host]
 cd ~/mansionradio
 
-# Build the image
+# Build the image (takes 3-5 minutes)
 docker build -t mansion-radio-bot:latest .
 
-# Wait 3-5 minutes for build to complete
+# Wait for it to complete, you'll see:
+# [1/5] FROM python:3.11-alpine
+# [2/5] WORKDIR /app
+# ...
+# => SUCCESS
 ```
 
 **Verify image was built:**
@@ -77,10 +86,10 @@ mansion-radio-bot       latest    abc123def...   2 minutes ago   ~250MB
 
 ---
 
-### Step 3: Deploy in Portainer on HS01
+### Step 3: Deploy in Portainer on Your Docker Host
 
-1. **Open Portainer UI** - Access via browser on HS01
-   - URL: Usually `http://localhost:9000` or `http://hs01:9000`
+1. **Open Portainer UI** - Access via browser on your Docker host
+   - URL: Usually `[your-portainer-url]`
 
 2. **Navigate to Stacks**
    - Click: **Stacks** (left sidebar)
@@ -107,13 +116,13 @@ services:
       - IRC_SERVER=irc.inthemansion.com
       - IRC_PORT=6697
       - BOT_NICKNAME=MansionRadio
-      - IRC_CHANNELS=#radio
+      - IRC_CHANNELS=#bots
       # AzuraCast API
       - AZURACAST_API=https://radio.inthemansion.com/api/nowplaying/mansionnet
       # Polling interval (seconds)
       - POLL_INTERVAL=10
-      # Timezone
-      - TZ=Europe/Belgrade
+      # Timezone (adjust to your location or use UTC)
+      - TZ=UTC
     volumes:
       - ./logs:/app/logs
     networks:
@@ -163,7 +172,7 @@ networks:
    - Check "Auto-scroll" in Portainer
    - Wait for first announcement:
      ```
-     [ANNOUNCE] #radio: ♫ Now playing: Artist - Title (Album)
+     [ANNOUNCE] #bots: ♫ Now playing: Artist - Title (Album)
      ```
 
 ### Via SSH (Optional):
@@ -188,7 +197,7 @@ docker ps --all | grep mansion-radio-bot
    - Port: `6697` (TLS)
    - Your nickname: (your choice)
 
-2. **Join #radio**
+2. **Join #bots** (or your configured channel)
    - You should see: **MansionRadio** already in channel
 
 3. **Test Automatic Announcement**
@@ -236,7 +245,7 @@ docker build -t mansion-radio-bot:latest .
 
 ### Bot doesn't join channel
 
-- Verify `IRC_CHANNELS=#radio` is set
+- Verify `IRC_CHANNELS=#bots` is set (or your configured channel)
 - Check logs: `docker logs mansion-radio-bot`
 - Test IRC server: `nc -zv irc.inthemansion.com 6697`
 

@@ -1,4 +1,4 @@
-# MansionRadio Bot - Manual Deployment to HS01
+# MansionRadio Bot - Manual Deployment Guide
 
 **Bot Configuration (Current):**
 - Channel: `#bots` (temporary for testing)
@@ -23,20 +23,19 @@ The project is ready at: `~/projects/mansionradio/`
 # The tarball is already created at:
 ls -lh ~/projects/mansionradio/mansionradio.tar.gz
 
-# Copy it to HS01:
-scp ~/projects/mansionradio/mansionradio.tar.gz pontuzz@192.168.1.20:~/
-# Password: (enter your HS01 password)
+# Copy it to your Docker host:
+scp ~/projects/mansionradio/mansionradio.tar.gz [username]@[your-docker-host]:~/
+# Password: (enter your host password)
 ```
 
 ---
 
-## Step 2: Extract and Prepare on HS01
+## Step 2: Extract and Prepare on Your Docker Host
 
-**SSH into HS01:**
+**SSH into your Docker host:**
 ```bash
-ssh pontuzz@192.168.1.20
-# or: ssh hs01
-# Password: (your HS01 password)
+ssh [username]@[your-docker-host]
+# Password: (your host password)
 ```
 
 **Extract the project:**
@@ -101,8 +100,8 @@ docker images | grep mansion-radio-bot
 **In your browser:**
 
 1. **Open Portainer:**
-   - URL: `https://portainer.hivenet.dev/#!/13/docker/stacks`
-   - (Already linked to HS01)
+   - URL: `[your-portainer-url]`
+   - Navigate to Stacks section for your Docker host
 
 2. **Create New Stack:**
    - Click: **Add Stack** (top right)
@@ -217,7 +216,7 @@ networks:
 
 ### Container won't start
 ```bash
-# On HS01, check logs:
+# On your Docker host, check logs:
 docker logs mansion-radio-bot
 
 # Verify image exists:
@@ -274,7 +273,7 @@ curl -v https://radio.inthemansion.com/api/nowplaying/mansionnet
 | Channel | `#bots` (temporary) |
 | IRC Server | `irc.inthemansion.com:6697` |
 | Poll Interval | 10 seconds |
-| Portainer URL | `https://portainer.hivenet.dev/#!/13/docker/stacks` |
+| Portainer URL | `[your-portainer-url]` |
 
 ---
 
