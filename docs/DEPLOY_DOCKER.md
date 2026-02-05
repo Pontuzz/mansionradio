@@ -29,7 +29,7 @@ docker run --rm \
   -e BOT_NICKNAME=MansionRadio \
   -e IRC_CHANNELS="#radio" \
   -e AZURACAST_API="https://radio.example.com/api/nowplaying/station_id" \
-  -e POLL_INTERVAL=15 \
+   -e POLL_INTERVAL=60 \
   mansion-radio-bot:latest
 ```
 
@@ -39,7 +39,7 @@ Expected output:
 [INFO] RadioBot initialized
 [INFO] Server: irc.example.com:6697
 [INFO] Channels: #radio
-[INFO] Poll interval: 15s
+[INFO] Poll interval: 60s
 [INFO] Connected to IRC server
 [INFO] Joined #radio
 ```
@@ -92,7 +92,7 @@ environment:
   - AZURACAST_API=https://radio.example.com/api/nowplaying/station_id
   
   # Polling Configuration
-  - POLL_INTERVAL=15                    # How often to check for song changes (seconds)
+  - POLL_INTERVAL=60                    # How often to check for song changes (seconds)
   - TZ=UTC                              # Timezone for logs (optional)
 ```
 
@@ -393,7 +393,7 @@ By default, logs are printed to stdout. To persist them in the container:
 1. ✅ Configure docker-compose.yml with your settings
 2. ✅ Build and start the container
 3. ✅ Verify bot joins IRC channel
-4. ✅ Wait for first song announcement (max 15 seconds)
+4. ✅ Wait for first song announcement (max 60 seconds)
 5. ✅ Monitor logs with `docker-compose logs -f`
 
 **Need Docker Compose reference?** See [docker-compose official docs](https://docs.docker.com/compose/)

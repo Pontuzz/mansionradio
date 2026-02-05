@@ -19,7 +19,7 @@ services:
       # AzuraCast API
       - AZURACAST_API=https://radio.example.com/api/nowplaying/station_id
       # Polling interval (seconds)
-      - POLL_INTERVAL=10
+      - POLL_INTERVAL=60
        # Timezone
        - TZ=UTC
     volumes:

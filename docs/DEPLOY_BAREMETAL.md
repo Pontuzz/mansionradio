@@ -131,7 +131,7 @@ SASL_PASSWORD=your_sasl_password        # Account password
 AZURACAST_API=https://radio.example.com/api/nowplaying/station_id
 
 # Polling
-POLL_INTERVAL=15                        # Check for songs every 15 seconds
+POLL_INTERVAL=60                        # Check for songs every 60 seconds
 ```
 
 **How to find these values:**
@@ -140,7 +140,7 @@ POLL_INTERVAL=15                        # Check for songs every 15 seconds
 - **IRC_CHANNELS:** Channels you want the bot to announce songs in
 - **SASL_USERNAME/PASSWORD:** Only needed if your nick is registered
 - **AZURACAST_API:** From your AzuraCast instance admin panel
-- **POLL_INTERVAL:** 10-30 seconds is typical
+- **POLL_INTERVAL:** 30-120 seconds is typical (production uses 60 seconds)
 
 ---
 
@@ -162,14 +162,14 @@ You should see output like:
 [INFO] RadioBot initialized
 [INFO] Server: irc.example.com:6697
 [INFO] Channels: #radio
-[INFO] Poll interval: 15s
+[INFO] Poll interval: 60s
 [INFO] Connected to IRC server
 [INFO] Joined #radio
 ```
 
 **To verify it's working:**
 1. Check your IRC channel—the bot should appear
-2. Wait for a song change (max poll_interval seconds)
+2. Wait for a song change (max 60 seconds with production settings)
 3. Bot should announce: `♫ Now playing: Artist - Title (Album)`
 
 **To stop:** Press `Ctrl+C`

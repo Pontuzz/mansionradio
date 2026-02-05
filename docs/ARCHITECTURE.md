@@ -170,7 +170,7 @@ IRC_CHANNELS=#bots,#radio
 SASL_USERNAME=your_account_name        # Account that owns the registered nick
 SASL_PASSWORD=<actual-password>
 AZURACAST_API=https://radio.example.com/api/nowplaying/station_id
-POLL_INTERVAL=10             # Seconds between API polls
+POLL_INTERVAL=60             # Seconds between API polls (production setting)
 ```
 
 ## Error Recovery
@@ -207,7 +207,7 @@ POLL_INTERVAL=10             # Seconds between API polls
 
 **Network:**
 - PRIVMSG announces: ~1 per song (typically 20+ min apart)
-- API polls: ~1 every 10 seconds (configurable)
+- API polls: ~1 every 60 seconds (production default, configurable)
 - SASL negotiation: ~100 bytes during connect
 - Respects IRC server penalty system
 

@@ -37,7 +37,7 @@ IRC_CHANNELS=#radio,#music
 SASL_USERNAME=account_name      # Optional - for registered nicks
 SASL_PASSWORD=password          # Optional - for registered nicks
 AZURACAST_API=https://radio.example.com/api/nowplaying/station_id
-POLL_INTERVAL=15
+POLL_INTERVAL=60
 ```
 
 For Docker: Edit `docker/docker-compose.yml` environment variables instead.

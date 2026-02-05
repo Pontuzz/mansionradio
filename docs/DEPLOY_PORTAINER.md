@@ -45,7 +45,7 @@ IRC_CHANNELS=#radio
 SASL_USERNAME=your_account_name
 SASL_PASSWORD=your_password
 AZURACAST_API=https://radio.example.com/api/nowplaying/station_id
-POLL_INTERVAL=15
+POLL_INTERVAL=60
 TZ=UTC
 ```
 
@@ -100,8 +100,8 @@ services:
       - SASL_PASSWORD=your_sasl_password_here
       # AzuraCast API
       - AZURACAST_API=https://radio.example.com/api/nowplaying/station_id
-      # Polling interval (seconds)
-      - POLL_INTERVAL=15
+       # Polling interval (seconds)
+       - POLL_INTERVAL=60
       # Timezone
       - TZ=UTC
     volumes:
@@ -133,7 +133,7 @@ environment:
   - SASL_USERNAME=your_account_name         # If using registered nick
   - SASL_PASSWORD=your_password             # SASL password
   - AZURACAST_API=https://radio.example... # Your AzuraCast API endpoint
-  - POLL_INTERVAL=15                        # Seconds between checks
+   - POLL_INTERVAL=60                        # Seconds between checks
   - TZ=UTC                                  # Timezone
 ```
 
@@ -180,9 +180,9 @@ services:
       - IRC_CHANNELS=#radio
       - SASL_USERNAME=your_account_name
       - SASL_PASSWORD=your_password
-      - AZURACAST_API=https://radio.example.com/api/nowplaying/station_id
-      - POLL_INTERVAL=15
-      - TZ=UTC
+       - AZURACAST_API=https://radio.example.com/api/nowplaying/station_id
+       - POLL_INTERVAL=60
+       - TZ=UTC
     volumes:
       - ./logs:/app/logs
     networks:
@@ -490,7 +490,7 @@ To debug network issues from within the container:
 1. ✅ Deploy stack (via git or web editor)
 2. ✅ Configure environment variables
 3. ✅ Verify bot connects to IRC
-4. ✅ Wait for first song announcement (max 15 seconds)
+4. ✅ Wait for first song announcement (max 60 seconds with production settings)
 5. ✅ Monitor logs regularly
 
 **Need Docker build troubleshooting?** See [TROUBLESHOOT_PORTAINER.md](TROUBLESHOOT_PORTAINER.md)
