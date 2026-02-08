@@ -50,13 +50,13 @@ class AzuraCastFetcher:
         return False
 
     def format_song(self, data: Dict[str, Any]) -> str:
-        """Format song info as IRC message.
+        """Format song info as IRC message with clear delimiters.
 
         Args:
             data: Response from AzuraCast API
 
         Returns:
-            Formatted message string.
+            Formatted message string with clear artist | song | album separation.
         """
         try:
             now_playing = data["now_playing"]["song"]
@@ -64,9 +64,13 @@ class AzuraCastFetcher:
             title = now_playing.get("title", "Unknown Title")
             album = now_playing.get("album", "")
 
-            msg = f"♫ Now playing: {artist} - {title}"
+            # Format with clear visual separation between fields
+            # Artist | Song Title | Album (if available)
+            parts = [f"Artist: {artist}", f"Song: {title}"]
             if album:
-                msg += f" ({album})"
+                parts.append(f"Album: {album}")
+
+            msg = f"♫ {' | '.join(parts)}"
 
             return msg
         except (KeyError, TypeError) as e:
