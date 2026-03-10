@@ -233,8 +233,10 @@ class RadioBot(irc.bot.SingleServerIRCBot):
     def on_saslfail(self, connection, event):
         """Called when SASL authentication fails (numeric 904, 905, 906)."""
         try:
+            # Event type contains the numeric code (904, 905, or 906)
+            numeric = event.type if hasattr(event, "type") else "unknown"
             msg = " ".join(event.arguments) if event.arguments else "unknown error"
-            logger.error(f"SASL authentication failed: {msg}")
+            logger.error(f"SASL authentication failed: numeric={numeric}, msg={msg}")
             self.sasl_authenticated = False
             connection.send_raw("CAP END")
             logger.debug("Sent: CAP END")
@@ -397,6 +399,16 @@ class RadioBot(irc.bot.SingleServerIRCBot):
         """Called when bot leaves a channel."""
         channel = event.target
         logger.debug(f"Left {channel}")
+
+    def on_kick(self, connection, event):
+        """Called when bot is kicked from a channel."""
+        channel = event.target
+        kicker = event.source.nick if event.source else "unknown"
+        reason = event.arguments[0] if event.arguments else "no reason"
+        logger.warning(f"KICKED from {channel} by {kicker}: {reason}")
+        # Try to rejoin
+        logger.info("Attempting to rejoin after kick...")
+        connection.join(channel)
 
     def on_error(self, connection, event):
         """Called when IRC server sends an error."""
