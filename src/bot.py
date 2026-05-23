@@ -353,6 +353,8 @@ class RadioBot(irc.bot.SingleServerIRCBot):
         logger.info("Set +b (bot) flag")
         connection.send_raw(f"MODE {self.connection.get_nickname()} +b")
         logger.info("Set +b (bot) flag")
+        connection.send_raw(f"MODE {self.connection.get_nickname()} +b")
+        logger.info("Set +b (bot) flag")
 
         # Now ready to join channels
         self._join_channels(connection)
