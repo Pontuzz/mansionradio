@@ -350,8 +350,7 @@ class RadioBot(irc.bot.SingleServerIRCBot):
 
         # Set +b flag to indicate this is a bot
         time.sleep(2)  # Delay to ensure connection is fully established
-        # Set +b flag to indicate this is a bot
-        connection.send_raw(f"MODE {self.connection.get_nickname()} +b")
+        connection.send_raw(f"MODE {connection.get_nickname()} +b")
         logger.info("Set +b (bot) flag")
 
         # Now ready to join channels
