@@ -9,8 +9,10 @@ from bot import RadioBot
 
 # Configure logging to stdout only
 # (File logging will be handled by container logs/volume mounts if needed)
+# Level defaults to INFO; set LOG_LEVEL=DEBUG for verbose polling output.
+log_level = os.getenv("LOG_LEVEL", "INFO").upper()
 logging.basicConfig(
-    level=logging.DEBUG,
+    level=getattr(logging, log_level, logging.INFO),
     format="[%(levelname)s] %(asctime)s - %(message)s",
     handlers=[
         logging.StreamHandler(sys.stdout),

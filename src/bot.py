@@ -11,7 +11,6 @@ import irc.bot
 import irc.connection
 import ssl
 import time
-import threading
 import logging
 import base64
 from enum import Enum
@@ -93,8 +92,13 @@ class RadioBot(irc.bot.SingleServerIRCBot):
 
         # Lifecycle control
         self.running = True
-        self.poller_thread = threading.Thread(target=self._poll_loop, daemon=True)
-        self.poller_thread.start()
+        # Poll the API on the reactor scheduler instead of a raw thread.
+        # Scheduler callbacks run in the reactor thread (via process_timeout),
+        # so connection.privmsg() is thread-safe by construction.
+        # Poll rate is exactly poll_interval (60s in production).
+        self.reactor.scheduler.execute_every(
+            period=self.config["poll_interval"], func=self._poll_once
+        )
 
         logger.info("=" * 60)
         logger.info("RadioBot initialized")
@@ -129,12 +133,19 @@ class RadioBot(irc.bot.SingleServerIRCBot):
         # This must happen early, while registration is in progress
         if self.connection:
             try:
-                # Small delay to ensure socket is ready
-                time.sleep(0.05)
-                self.connection.send_raw("CAP LS 302")
-                logger.debug("Sent: CAP LS 302")
+                # Small delay to ensure socket is ready (non-blocking:
+                # scheduled on the reactor so the event loop isn't frozen)
+                self.reactor.scheduler.execute_after(0.05, self._send_cap_ls)
             except Exception as e:
-                logger.error(f"Failed to send CAP LS: {e}", exc_info=True)
+                logger.error(f"Failed to schedule CAP LS: {e}", exc_info=True)
+
+    def _send_cap_ls(self):
+        """Send CAP LS once the socket is ready (called by scheduler)."""
+        try:
+            self.connection.send_raw("CAP LS 302")
+            logger.debug("Sent: CAP LS 302")
+        except Exception as e:
+            logger.error(f"Failed to send CAP LS: {e}", exc_info=True)
 
     def on_connect(self, connection, event):
         """Called when socket connection is established (not IRC registration).
@@ -243,41 +254,40 @@ class RadioBot(irc.bot.SingleServerIRCBot):
         except Exception as e:
             logger.error(f"Error in on_saslfail: {e}", exc_info=True)
 
-    def _poll_loop(self):
-        """Poll API continuously, respecting connection state.
+    def _poll_once(self):
+        """Poll the API once and announce if the song changed.
 
-        Only announces when in ACTIVE state.
-        Follows eggdrop's principle: don't act until ready.
+        Called by the reactor scheduler every poll_interval while running.
+        Only announces when in ACTIVE state (eggdrop principle: don't act
+        until ready). Runs in the reactor thread, so it returns quickly;
+        network timeouts are bounded by the fetcher's request timeout.
         """
-        logger.info("Poll loop started")
-        while self.running:
-            try:
-                # Wait until bot is active and connected
-                if self.state != BotState.ACTIVE:
-                    time.sleep(self.config["poll_interval"])
-                    continue
+        if not self.running:
+            return
 
-                logger.debug("Polling API for current song...")
-                data = self.fetcher.get_now_playing()
+        # Wait until bot is active and connected
+        if self.state != BotState.ACTIVE:
+            return
 
-                if not data:
-                    logger.warning("API returned no data")
-                    time.sleep(self.config["poll_interval"])
-                    continue
+        try:
+            logger.debug("Polling API for current song...")
+            data = self.fetcher.get_now_playing()
 
-                # Store latest song data for !playing command
-                self.last_song_data = data
+            if not data:
+                logger.warning("API returned no data")
+                return
 
-                # Announce if song changed
-                if self.fetcher.has_song_changed(data):
-                    message = self.fetcher.format_song(data)
-                    logger.info(f"Song changed: {message}")
-                    self._announce(message)
+            # Store latest song data for !playing command
+            self.last_song_data = data
 
-            except Exception as e:
-                logger.error(f"Poll loop error: {e}", exc_info=True)
+            # Announce if song changed
+            if self.fetcher.has_song_changed(data):
+                message = self.fetcher.format_song(data)
+                logger.info(f"Song changed: {message}")
+                self._announce(message)
 
-            time.sleep(self.config["poll_interval"])
+        except Exception as e:
+            logger.error(f"Poll loop error: {e}", exc_info=True)
 
     def _announce(self, message: str):
         """Send message to IRC channels.
@@ -348,10 +358,22 @@ class RadioBot(irc.bot.SingleServerIRCBot):
             else:
                 logger.info("SASL authentication verified")
 
-        # Set +b flag to indicate this is a bot
-        time.sleep(2)  # Delay to ensure connection is fully established
-        connection.send_raw(f"MODE {connection.get_nickname()} +b")
-        logger.info("Set +b (bot) flag")
+        # Set +b flag to indicate this is a bot.
+        # Deferred via scheduler so the reactor isn't blocked for 2s.
+        self.reactor.scheduler.execute_after(2, self._finish_welcome)
+
+    def _finish_welcome(self):
+        """Set +b flag and join channels after registration (called by scheduler).
+
+        Runs a couple of seconds after 001 WELCOME so the connection is
+        fully established, without blocking the reactor event loop.
+        """
+        try:
+            connection = self.connection
+            connection.send_raw(f"MODE {connection.get_nickname()} +b")
+            logger.info("Set +b (bot) flag")
+        except Exception as e:
+            logger.error(f"Failed to set +b flag: {e}")
 
         # Now ready to join channels
         self._join_channels(connection)
@@ -386,10 +408,9 @@ class RadioBot(irc.bot.SingleServerIRCBot):
         self.sasl_authenticated = False
         self.cap_ack_received = False
 
-        # irc.bot will automatically reconnect, but wait a bit
-        if self.running:
-            logger.info("Reconnecting in 10 seconds...")
-            time.sleep(10)
+        # Reconnect is handled by irc.bot's built-in ExponentialBackoff
+        # strategy (scheduled at priority -20, before this handler runs).
+        # No blocking sleep here — it would only freeze the reactor.
 
     def on_join(self, connection, event):
         """Called when bot successfully joins a channel."""

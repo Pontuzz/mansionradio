@@ -1,7 +1,12 @@
 """AzuraCast API fetcher for radio station data."""
 
+import logging
 import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 from typing import Optional, Dict, Any
+
+logger = logging.getLogger(__name__)
 
 
 class AzuraCastFetcher:
@@ -11,6 +16,22 @@ class AzuraCastFetcher:
         self.api_url = api_url
         self.last_song_id = None
 
+        # Reuse a persistent HTTPS connection across polls instead of
+        # opening a fresh TCP+TLS handshake every 60s (1,440/day).
+        # This avoids repeated handshake load on the hoster's server.
+        # A connect-retry transparently handles stale keep-alive
+        # connections (server may close idle connections between polls).
+        self.session = requests.Session()
+        retries = Retry(
+            total=1,
+            connect=1,
+            read=0,
+            status=0,
+            allowed_methods=["GET"],
+        )
+        self.session.mount("https://", HTTPAdapter(max_retries=retries))
+        self.session.mount("http://", HTTPAdapter(max_retries=retries))
+
     def get_now_playing(self) -> Optional[Dict[str, Any]]:
         """Fetch current song from AzuraCast API.
 
@@ -18,11 +39,11 @@ class AzuraCastFetcher:
             JSON response dict or None if request fails.
         """
         try:
-            response = requests.get(self.api_url, timeout=5)
+            response = self.session.get(self.api_url, timeout=5)
             response.raise_for_status()
             return response.json()
         except requests.RequestException as e:
-            print(f"[ERROR] Failed to fetch from AzuraCast: {e}")
+            logger.error(f"Failed to fetch from AzuraCast: {e}")
             return None
 
     def has_song_changed(self, data: Dict[str, Any]) -> bool:
@@ -40,7 +61,7 @@ class AzuraCastFetcher:
         try:
             current_song_id = data["now_playing"]["song"]["id"]
         except (KeyError, TypeError):
-            print("[ERROR] Invalid API response structure")
+            logger.error("Invalid API response structure")
             return False
 
         if current_song_id != self.last_song_id:
@@ -72,5 +93,5 @@ class AzuraCastFetcher:
 
             return msg
         except (KeyError, TypeError) as e:
-            print(f"[ERROR] Failed to format song: {e}")
+            logger.error(f"Failed to format song: {e}")
             return "♫ Error retrieving current song"
