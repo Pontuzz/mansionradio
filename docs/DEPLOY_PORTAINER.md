@@ -46,6 +46,7 @@ SASL_USERNAME=your_account_name
 SASL_PASSWORD=your_password
 AZURACAST_API=https://radio.example.com/api/nowplaying/station_id
 POLL_INTERVAL=60
+LOG_LEVEL=INFO
 TZ=UTC
 ```
 
@@ -102,6 +103,8 @@ services:
       - AZURACAST_API=https://radio.example.com/api/nowplaying/station_id
        # Polling interval (seconds)
        - POLL_INTERVAL=60
+      # Logging (optional)
+      - LOG_LEVEL=INFO
       # Timezone
       - TZ=UTC
     volumes:
@@ -109,7 +112,7 @@ services:
     networks:
       - mansion-net
     healthcheck:
-      test: ["CMD", "pgrep", "-f", "python src/main.py"]
+      test: ["CMD", "pgrep", "-f", "src/main.py"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -119,6 +122,8 @@ networks:
   mansion-net:
     driver: bridge
 ```
+
+> **⚠️ Relative volume paths on remote agents:** If deploying to a **remote** Portainer environment (agent endpoint), use an **absolute** host path for the logs volume (e.g. `/path/to/mansionradio/docker/logs:/app/logs`). Relative paths (`./logs`) resolve relative to where Portainer stores the compose file, not your project directory — a common source of confusion.
 
 ### Step 4: Edit Environment Variables
 
@@ -134,6 +139,7 @@ environment:
   - SASL_PASSWORD=your_password             # SASL password
   - AZURACAST_API=https://radio.example... # Your AzuraCast API endpoint
    - POLL_INTERVAL=60                        # Seconds between checks
+  - LOG_LEVEL=INFO                          # Logging level (optional)
   - TZ=UTC                                  # Timezone
 ```
 
@@ -182,13 +188,14 @@ services:
       - SASL_PASSWORD=your_password
        - AZURACAST_API=https://radio.example.com/api/nowplaying/station_id
        - POLL_INTERVAL=60
+       - LOG_LEVEL=INFO
        - TZ=UTC
     volumes:
       - ./logs:/app/logs
     networks:
       - mansion-net
     healthcheck:
-      test: ["CMD", "pgrep", "-f", "python src/main.py"]
+      test: ["CMD", "pgrep", "-f", "src/main.py"]
       interval: 30s
       timeout: 10s
       retries: 3

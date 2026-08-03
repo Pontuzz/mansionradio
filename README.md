@@ -8,7 +8,7 @@ IRC bot that polls an AzuraCast instance and announces currently playing songs t
 
 **SASL authentication:** Implements RFC 5802 PLAIN mechanism with proper CAP negotiation and multiline message handling.
 
-**Polling:** Non-blocking async polling of AzuraCast API respects bot state (only announces when ACTIVE).
+**Polling:** Non-blocking polling of AzuraCast API runs on the IRC reactor scheduler (single-threaded, thread-safe by construction) and respects bot state (only announces when ACTIVE).
 
 See `docs/ARCHITECTURE.md` for detailed design and rationale.
 
@@ -38,6 +38,7 @@ SASL_USERNAME=account_name      # Optional - for registered nicks
 SASL_PASSWORD=password          # Optional - for registered nicks
 AZURACAST_API=https://radio.example.com/api/nowplaying/station_id
 POLL_INTERVAL=60
+LOG_LEVEL=INFO                  # Optional - defaults to INFO, set DEBUG for verbose
 ```
 
 For Docker: Edit `docker/docker-compose.yml` environment variables instead.
@@ -110,10 +111,14 @@ CAP END
 Properly handles multiline CAP LS responses (indicated by `*` marker).
 
 ### API Polling
-- Polls every N seconds (configurable)
-- Tracks song hash to detect changes
+- Polls every N seconds (configurable) on the IRC reactor scheduler
+- Reuses one persistent HTTPS connection across polls (no TLS handshake each time)
+- Tracks song ID to detect changes
 - Only announces when bot is ACTIVE (joined channels)
 - Silently skips API errors, continues polling
+
+### `!playing` Command
+- Replies with the currently playing song **only in the channel where it was posted** (song announcements broadcast to all configured channels, but `!playing` does not)
 
 ## Deployment
 

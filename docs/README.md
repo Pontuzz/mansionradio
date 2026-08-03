@@ -121,6 +121,7 @@ For detailed configuration options, see [Configuration](../README.md#configurati
 - `SASL_PASSWORD` - SASL password (optional)
 - `AZURACAST_API` - AzuraCast API endpoint URL
 - `POLL_INTERVAL` - How often to poll API (seconds)
+- `LOG_LEVEL` - Logging level (INFO default, or DEBUG)
 - `TZ` - Timezone for timestamps (optional)
 
 ---

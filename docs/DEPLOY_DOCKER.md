@@ -29,7 +29,7 @@ docker run --rm \
   -e BOT_NICKNAME=MansionRadio \
   -e IRC_CHANNELS="#radio" \
   -e AZURACAST_API="https://radio.example.com/api/nowplaying/station_id" \
-   -e POLL_INTERVAL=60 \
+  -e POLL_INTERVAL=60 \
   mansion-radio-bot:latest
 ```
 
@@ -93,6 +93,7 @@ environment:
   
   # Polling Configuration
   - POLL_INTERVAL=60                    # How often to check for song changes (seconds)
+  - LOG_LEVEL=INFO                      # Logging level (optional, defaults to INFO)
   - TZ=UTC                              # Timezone for logs (optional)
 ```
 
@@ -168,7 +169,7 @@ docker-compose ps
 docker stats mansion-radio-bot
 ```
 
-Expected resource usage: **<100MB memory**, **<5% CPU** (when idle)
+Expected resource usage: **~25MB memory**, **<1% CPU** (when idle)
 
 ### Restart the Bot
 

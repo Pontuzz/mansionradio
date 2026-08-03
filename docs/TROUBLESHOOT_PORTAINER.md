@@ -416,7 +416,7 @@ docker logs mansion-radio-bot | grep -i "poll\|checking\|song"
 - Manually test by changing the song in AzuraCast
 
 **If you see no poll activity:**
-- The polling thread may not be running
+- The scheduler-based poll may not be running
 - Check for errors in the logs
 - Try restarting: **Stacks** → **mansion-radio-bot** → **Restart**
 

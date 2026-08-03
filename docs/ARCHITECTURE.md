@@ -72,11 +72,19 @@ We do this at the raw message level: SASL handlers send `CAP END`, not the gener
 
 ### 3. Polling Layer
 
-The bot runs a daemon thread (`_poll_loop`) that:
+Polling runs on the IRC library's **reactor scheduler** (a single-threaded event loop) via `execute_every(period, func)`:
+
 - Only polls when in ACTIVE state
-- Calls AzuraCast API every `poll_interval` seconds
+- Calls AzuraCast API every `poll_interval` seconds (fired on the reactor thread)
 - Detects song changes by tracking song ID
 - Respects rate limiting (never announces faster than poll interval)
+
+**Why the scheduler (not a thread):**
+- Scheduler callbacks run on the reactor thread, so `connection.privmsg()` is thread-safe by construction — no shared-state locks needed
+- `execute_every` fires exactly every N seconds (no drift from sleep-in-loop timing)
+- Removing the poller thread eliminates an extra thread and its stack allocation
+
+**Connection reuse:** The AzuraCast fetcher keeps a persistent `requests.Session()` across polls (reusing the TCP+TLS connection) instead of opening a fresh handshake every poll — roughly 1,440 fewer TLS handshakes per day on the hoster's server. A connect-retry transparently handles stale keep-alive connections.
 
 **Rate Limiting Philosophy (from Eggdrop):**
 
@@ -90,10 +98,12 @@ We respect this naturally: announcements only happen on song changes (typically 
 ### 4. Announcement Layer
 
 When a song change is detected:
-1. Format message: `♫ Now playing: Artist - Title (Album)`
+1. Format message: `♫ Now playing: Title [Album] by Artist`
 2. Announce to each channel sequentially
 3. Log each announcement
 4. Track last announcement time for rate limiting
+
+**Note:** `!playing` replies **only** in the channel where it was posted (it uses the message's `event.target`). Only song-change announcements broadcast to every configured channel.
 
 **Important:** Announcements only happen when bot is ACTIVE (channels joined).
 
@@ -136,17 +146,22 @@ When a song change is detected:
 - If SASL doesn't complete in time, server closes connection
 - Bot automatically reconnects and tries again
 
-### Decision 4: Separate Polling Thread
+### Decision 4: Scheduler-Based Polling (not a polling thread)
 
 **Why Not Poll in Event Handlers?**
 - Event handlers must return quickly to avoid blocking
 - Network requests can be slow (timeouts, delays)
 - API outages would freeze IRC connection
 
+**Why Not a Separate Thread?**
+- A second thread shares no state with the reactor thread, so calling `connection.privmsg()` from it is a race — it can interleave with the reactor's own writes
+- Managing a daemon thread adds lifecycle complexity (start/stop on reconnect)
+
 **Our Solution:**
-- Daemon thread polls API continuously
-- Main thread handles IRC events
-- Thread-safe: only reads `last_song_data`, writes only when changed
+- `self.reactor.scheduler.execute_every(period=poll_interval, func=self._poll_once)` — the `irc` library's built-in `DefaultScheduler`
+- Scheduler callbacks run on the reactor thread (via `process_timeout()`), so `privmsg()` is thread-safe by construction
+- Poll is a single-shot `_poll_once()` — no loop, no sleeps; the scheduler re-invokes it each interval
+- API call timeouts are bounded by the fetcher's request timeout (5s), so a slow API delays the reactor at most a few seconds — acceptable for a music bot
 
 ### Decision 5: Minimal Logging
 
@@ -171,6 +186,7 @@ SASL_USERNAME=your_account_name        # Account that owns the registered nick
 SASL_PASSWORD=<actual-password>
 AZURACAST_API=https://radio.example.com/api/nowplaying/station_id
 POLL_INTERVAL=60             # Seconds between API polls (production setting)
+LOG_LEVEL=INFO               # Logging level: INFO (default) or DEBUG
 ```
 
 ## Error Recovery
@@ -202,12 +218,12 @@ POLL_INTERVAL=60             # Seconds between API polls (production setting)
 
 **Memory:**
 - Single bot instance with minimal state
-- Polling thread uses negligible CPU (sleep between polls)
+- No polling thread (single reactor thread only)
 - Event thread responsive to IRC messages
 
 **Network:**
 - PRIVMSG announces: ~1 per song (typically 20+ min apart)
-- API polls: ~1 every 60 seconds (production default, configurable)
+- API polls: ~1 every 60 seconds (production default, configurable), reusing one persistent HTTPS connection (~1,440 TLS handshakes/day eliminated vs. a new session per poll)
 - SASL negotiation: ~100 bytes during connect
 - Respects IRC server penalty system
 
@@ -233,8 +249,8 @@ POLL_INTERVAL=60             # Seconds between API polls (production setting)
 ## Files & Responsibilities
 
 - **src/main.py**: Configuration loading and entry point
-- **src/bot.py**: Core IRC bot with state machine and SASL
-- **src/fetchers/azuracast.py**: AzuraCast API client
+- **src/bot.py**: Core IRC bot with state machine, SASL, and scheduler-based polling
+- **src/fetchers/azuracast.py**: AzuraCast API client (persistent session)
 - **requirements.txt**: Python dependencies
 - **docker/Dockerfile**: Container build (Python 3.11 Alpine, uid 1000)
 - **systemd/mansion-radio-bot.service**: Systemd service template
@@ -284,9 +300,10 @@ mansion-radio-bot/
 2. Load `.env` file (or environment variables)
 3. Validate required configuration
 4. Create `RadioBot` instance
-5. Start bot connection thread
-6. Start polling thread
-7. Main thread waits for shutdown signal
+5. Start bot connection (blocks in reactor event loop)
+6. Main thread waits for shutdown signal
+
+Polling is registered at startup via `reactor.scheduler.execute_every()` and runs on the reactor thread — no separate polling thread to start.
 
 ### Connection Sequence
 
@@ -306,14 +323,14 @@ mansion-radio-bot/
 
 ### Polling Loop
 
-1. Sleep until next poll time
+1. Reactor scheduler fires `_poll_once()` every `poll_interval` seconds
 2. Check bot is in ACTIVE state
-3. Call AzuraCast API
+3. Call AzuraCast API (reusing the persistent session)
 4. Parse response for current song ID
 5. Compare to last song ID
 6. If changed: Announce in all channels
 7. Update last song ID
-8. Repeat
+8. Scheduler re-invokes after the next interval
 
 ### Message Handlers
 
